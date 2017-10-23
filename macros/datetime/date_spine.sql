@@ -3,7 +3,7 @@
 /*
 call as follows:
 
-date_spine(
+dbt_utils.date_spine(
     ref('organizations'),
     "minute",
     "to_date('01/01/2016', 'mm/dd/yyyy')",
