@@ -47,6 +47,14 @@ Arguments:
                suffix='',
                then_value=1,
                else_value=0) %}
+
+  {% if not values %}
+    {% if execute %}
+      {%- set msg = "No values to pivot in column " ~ column ~ ". Pivot macro failed." -%}
+      {{log(modules.datetime.datetime.now().strftime('%H:%M:%S') ~ " | " ~ msg, info=True)}}
+    {% endif %}
+    null as pivot_failure
+  {% else %}
   {% for v in values %}
     {{ agg }}(
       case
@@ -60,4 +68,5 @@ Arguments:
     {% endif %}
     {% if not loop.last %},{% endif %}
   {% endfor %}
+  {% endif %}
 {% endmacro %}
