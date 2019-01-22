@@ -28,7 +28,7 @@ Arguments:
   {%- set cols = adapter.get_columns_in_table(schema, table_name) %}
 
   {%- for col in cols -%}
-    {%- if col.column not in exclude -%}
+    {%- if col.column.lower() not in exclude|map('lower') -%}
       {% set _ = include_cols.append(col) %}
     {%- endif %}
   {%- endfor %}
@@ -39,8 +39,8 @@ Arguments:
       {%- for exclude_col in exclude %}
         {{ exclude_col }},
       {%- endfor %}
-      cast('{{ col.column }}' as varchar) as field_name,
-      {{ dbt_utils.safe_cast(field=col.column, type=cast_to) }} as value
+      cast('{{ col.column }}' as {{ dbt_utils.type_string() }}) as field_name,
+      cast({{ col.column }} as {{ cast_to }}) as value
     from {{ table }}
     {% if not loop.last -%}
       union all

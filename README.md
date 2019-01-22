@@ -78,15 +78,48 @@ Usage:
 ```
 ---
 ### Schema Tests
+#### equal_rowcount ([source](macros/schema_tests/equal_rowcount.sql))
+This schema test asserts the that two relations have the same number of rows.
+
+Usage:
+```yaml
+version: 2
+
+models:
+  - name: model_name
+    tests:
+      - dbt_utils.equal_rowcount:
+          compare_model: ref('other_table_name')
+
+```
+
 #### equality ([source](macros/schema_tests/equality.sql))
 This schema test asserts the equality of two relations.
 
 Usage:
+```yaml
+version: 2
+
+models:
+  - name: model_name
+    tests:
+      - dbt_utils.equality:
+          compare_model: ref('other_table_name')
+
 ```
-model_name:
-  constraints:
-    dbt_utils.equality:
-      - ref('other_table_name')
+
+#### expression_is_true ([source](macros/schema_tests/expression_is_true.sql))
+This schema test asserts that a valid sql expression is true for all records. This is useful when checking integrity across columns, for example, that a total is equal to the sum of its parts, or that at least one column is true.
+
+Usage:
+```yaml
+version: 2
+
+models:
+  - name: model_name
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "col_a + col_b = total"
 
 ```
 
@@ -94,22 +127,32 @@ model_name:
 This schema test asserts that there is data in the referenced model at least as recent as the defined interval prior to the current timestamp.
 
 Usage:
-```
-model_name:
-    constraints:
-        dbt_utils.recency:
-            - {field: created_at, datepart: day, interval: 1}
+```yaml
+version: 2
+
+models:
+  - name: model_name
+    tests:   
+      - dbt_utils.recency:
+          datepart: day
+          field: created_at
+          interval: 1
 ```
 
 #### at_least_one ([source](macros/schema_tests/at_least_one.sql))
 This schema test asserts if column has at least one value.
 
 Usage:
-```
-model_name:
-  constraints:
-    dbt_utils.at_least_one:
-      - column_name
+```yaml
+version: 2
+
+models:
+  - name: model_name
+    columns:
+      - name: col_name
+        tests:
+          - dbt_utils.at_least_one
+      
 
 ```
 
@@ -117,11 +160,15 @@ model_name:
 This schema test asserts if column does not have same value in all rows.
 
 Usage:
-```
-model_name:
-  constraints:
-    dbt_utils.not_constant:
-      - column_name
+```yaml
+version: 2
+
+models:
+  - name: model_name
+    columns:
+      - name: column_name
+        tests:
+          - dbt_utils.not_constant
 
 ```
 
@@ -129,11 +176,18 @@ model_name:
 This schema test asserts if values in a given column have exactly the same cardinality as values from a different column in a different model.
 
 Usage:
-```
-model_name:
-  constraints:
-    dbt_utils.cardinality_equality:
-    - {from: column_name, to: ref('other_model_name'), field: other_column_name}
+```yaml
+version: 2
+
+models:
+  - name: model_name
+    columns:
+      - name: from_column
+        tests:
+          - dbt_utils.cardinality_equality:
+              field: other_column_name
+              to: ref('other_model_name')
+
 ```
 
 ---
@@ -185,14 +239,15 @@ from {{ref('my_model')}}
 ```
 
 #### union_tables ([source](macros/sql/union.sql))
-This macro implements an "outer union." The list of tables provided to this macro will be unioned together, and any columns exclusive to a subset of these tables will be filled with `null` where not present. The `column_override` argument is used to explicitly assign the column type for a set of columns.
+This macro implements an "outer union." The list of tables provided to this macro will be unioned together, and any columns exclusive to a subset of these tables will be filled with `null` where not present. The `column_override` argument is used to explicitly assign the column type for a set of columns. The `source_column_name` argument is used to change the name of the`_dbt_source_table` field.
 
 Usage:
 ```
 {{ dbt_utils.union_tables(
     tables=[ref('table_1'), ref('table_2')],
     column_override={"some_field": "varchar(100)"},
-    exclude=["some_other_field"]
+    exclude=["some_other_field"],
+    source_column_name='custom_source_column_name'
 ) }}
 ```
 
@@ -300,6 +355,23 @@ Usage:
 ```
 {{ dbt_utils.get_url_parameter(field='page_url', url_parameter='utm_source') }}
 ```
+
+#### get_url_host ([source](macros/web/get_url_host.sql))
+This macro extracts a hostname from a column containing a url.
+
+Usage:
+```
+{{ dbt_utils.get_url_host(field='page_url') }}
+```
+
+#### get_url_path ([source](macros/web/get_url_path.sql))
+This macro extracts a page path from a column containing a url.
+
+Usage:
+```
+{{ dbt_utils.get_url_host(field='page_url') }}
+```
+
 ---
 ### Materializations
 #### insert_by_period ([source](macros/materializations/insert_by_period_materialization.sql))

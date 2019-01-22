@@ -1,4 +1,4 @@
-{% macro union_tables(tables, column_override=none, exclude=none) -%}
+{% macro union_tables(tables, column_override=none, exclude=none, source_column_name=none) -%}
 
     {#-- Prevent querying of db in parsing mode. This works because this macro does not create any new refs. #}
     {%- if not execute -%}
@@ -7,6 +7,7 @@
 
     {%- set exclude = exclude if exclude is not none else [] %}
     {%- set column_override = column_override if column_override is not none else {} %}
+    {%- set source_column_name = source_column_name if source_column_name is not none else '_dbt_source_table' %}
 
     {%- set table_columns = {} %}
     {%- set column_superset = {} %}
@@ -56,15 +57,14 @@
         (
             select
 
-                {{ dbt_utils.safe_cast(dbt_utils.string_literal(table), dbt_utils.type_string()) }} as _dbt_source_table,
+                cast({{ dbt_utils.string_literal(table) }} as {{ dbt_utils.type_string() }}) as {{ source_column_name }},
 
                 {% for col_name in ordered_column_names -%}
 
                     {%- set col = column_superset[col_name] %}
                     {%- set col_type = column_override.get(col.column, col.data_type) %}
                     {%- set col_name = adapter.quote(col_name) if col_name in table_columns[table] else 'null' %}
-
-                    {{ dbt_utils.safe_cast(col_name, col_type) }} as {{ col.quoted }} {% if not loop.last %},{% endif %}
+                    cast({{ col_name }} as {{ col_type }}) as {{ col.quoted }} {% if not loop.last %},{% endif %}
                 {%- endfor %}
 
             from {{ table }}
